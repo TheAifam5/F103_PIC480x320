@@ -47,5 +47,5 @@ jobs:
         uses: actions/upload-artifact@v5
         with:
           name: firmware-binary
-          path: .pio/build
+          path: .pio/build/*/firmware.bin
           if-no-files-found: error
