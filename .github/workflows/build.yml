@@ -1,0 +1,49 @@
+name: build
+
+on:
+  push:
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.platformio/.cache
+          key: ${{ runner.os }}-pio
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade platformio
+
+      - name: Install platformIO libraries
+        run: |
+          export PATH="./buildroot/bin/:./buildroot/tests/:${PATH}"
+          pio lib -e tronxy_stm32f103 install
+
+      - name: Make IRQHandlers weak
+        run: |
+          sed -i '/IRQHandler(void)/s/^/__weak /' ~/.platformio/packages/framework-arduinoststm32/libraries/SrcWrapper/src/stm32/interrupt.cpp
+
+      - name: Run PlatformIO Build
+        run: |
+          export PATH="./buildroot/bin/:./buildroot/tests/:${PATH}"
+          sed -i '/#define/s/PROJ_XY3SE$/PROJ_X5SA400_PRO/' Marlin/TronxyMachine.h
+          pio run -e tronxy_stm32f103 -v
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v5
+        with:
+          name: firmware
